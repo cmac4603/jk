@@ -34,9 +34,9 @@ pub struct PrData {
 }
 
 impl PrData {
-    pub fn new(title: String, body: String, head: String, base: String) -> Self {
+    pub fn new(head: String, body: String, base: String) -> Self {
         PrData {
-            title,
+            title: head.clone(),
             body,
             head,
             base,

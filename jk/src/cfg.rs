@@ -6,8 +6,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct JkConfig {
-    pub github_email: String,
-    pub github_username: String,
+    pub git_commit_template: String,
     pub ssh_key_fp: String,
 }
 
