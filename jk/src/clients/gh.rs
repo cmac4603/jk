@@ -3,9 +3,9 @@ use std::env;
 use anyhow::{Error, Result};
 use reqwest::{
     header::{HeaderMap, AUTHORIZATION, USER_AGENT},
-    Client, Response,
+    Client,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub struct GithubClient<'gh> {
     api_domain: &'gh str,
@@ -44,6 +44,11 @@ impl PrData {
     }
 }
 
+#[derive(Deserialize)]
+pub struct CreatePrResponse {
+    pub html_url: String,
+}
+
 impl<'gh> GithubClient<'gh> {
     fn get_headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
@@ -62,12 +67,16 @@ impl<'gh> GithubClient<'gh> {
         org: String,
         repo: String,
         data: PrData,
-    ) -> Result<Response> {
-        self.client
+    ) -> Result<CreatePrResponse> {
+        let resp = self
+            .client
             .post(format!("{}/repos/{}/{}/pulls", self.api_domain, org, repo))
             .headers(self.get_headers())
             .json(&data)
             .send()
+            .await?;
+        resp.error_for_status()?
+            .json::<CreatePrResponse>()
             .await
             .map_err(Error::from)
     }
