@@ -6,8 +6,6 @@ on:
 
 env:
   APP_NAME: jk
-  RUST_TARGET_MUSL: "x86_64-unknown-linux-musl"
-  RUST_TARGET_OSX: "x86_64-apple-darwin"
 
 jobs:
   publish:
@@ -66,7 +64,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.release.tag_name }}
         with:
           asset_name: ${{ env.APP_NAME }}-v${{ env.RELEASE_VERSION }}-${{ matrix.target }}
-          file: target/${{ matrix.target }}/release/${{ env.APP_NAME }}
+          file: target/release/${{ env.APP_NAME }}
           overwrite: true
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.RELEASE_VERSION }}
