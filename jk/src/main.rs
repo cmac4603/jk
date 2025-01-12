@@ -10,6 +10,7 @@ enum Cli {
     /// Pull rqeuest commands
     #[command(subcommand)]
     Pr(cmds::pr::PrCommand),
+    /// Self-update
     Update,
 }
 
