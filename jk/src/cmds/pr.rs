@@ -1,6 +1,7 @@
+use std::env::current_dir;
+
 use anyhow::Result;
 use clap::Parser;
-use inquire::Text;
 
 use crate::{
     cfg::JkConfig,
@@ -20,7 +21,7 @@ pub enum PrCommand {
 impl PrCommand {
     pub async fn run_cmd(self, cfg: JkConfig) -> Result<String> {
         match self {
-            Self::New(ref args) => self.create_pull_request(cfg).await,
+            Self::New(ref _args) => self.create_pull_request(cfg).await,
         }
     }
 
@@ -32,7 +33,18 @@ impl PrCommand {
         let (org, repo) = git_client.get_org_repo()?;
 
         // inputs from user
-        let branch_name = Text::new("Branch name:").prompt()?;
+        let branch_name = current_dir()?
+            .components()
+            .last()
+            .ok_or_else(|| format!("No current directory found"))
+            .expect("Current directory could not be found???")
+            .as_os_str()
+            .to_str()
+            .expect("Will be valid")
+            .to_string();
+
+        println!("Branch name: {}", branch_name.clone());
+
         let commit_msg = pr_comment(commit_template)?;
 
         // push to github
@@ -40,7 +52,7 @@ impl PrCommand {
         git_client.push(branch_name.clone())?;
 
         // create pull request
-        let pr_data = PrData::new(branch_name.clone(), commit_msg, "main".to_string());
+        let pr_data = PrData::new(branch_name, commit_msg, "main".to_string());
         let gh_resp = gh_client.create_pull_request(org, repo, pr_data).await?;
 
         Ok(gh_resp.html_url)
