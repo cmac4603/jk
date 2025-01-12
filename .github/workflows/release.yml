@@ -34,9 +34,10 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sudo apt-get install -y musl \
-                         musl-tools \
-                         pkg-config \
-                         libssl-dev
+           musl-tools \
+           pkg-config \
+           libssl-dev \
+           linux-musl-dev
 
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@stable
