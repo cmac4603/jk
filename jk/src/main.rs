@@ -10,6 +10,7 @@ enum Cli {
     /// Pull rqeuest commands
     #[command(subcommand)]
     Pr(cmds::pr::PrCommand),
+    Update,
 }
 
 #[tokio::main]
@@ -17,6 +18,7 @@ async fn main() -> anyhow::Result<()> {
     let config = cfg::JkConfig::get()?;
     match Cli::parse() {
         Cli::Pr(pr) => println!("{}", pr.run_cmd(config).await?),
+        Cli::Update => println!("{}", cmds::update::update().await?),
     }
     Ok(())
 }
