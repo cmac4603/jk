@@ -6,6 +6,7 @@ use reqwest::{
     Client,
 };
 use serde::{Deserialize, Serialize};
+use urlencoding::encode;
 
 pub struct GithubClient<'gh> {
     api_domain: &'gh str,
@@ -49,6 +50,18 @@ pub struct CreatePrResponse {
     pub html_url: String,
 }
 
+#[derive(Deserialize)]
+pub struct SearchResults {
+    total_count: u64,
+    incomplete_results: bool,
+    items: Vec<SearchResultsItems>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SearchResultsItems {
+    number: u64,
+}
+
 impl<'gh> GithubClient<'gh> {
     fn get_headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
@@ -78,6 +91,33 @@ impl<'gh> GithubClient<'gh> {
         resp.error_for_status()?
             .json::<CreatePrResponse>()
             .await
+            .map_err(Error::from)
+    }
+
+    pub async fn list_prs_by_assignee(
+        self,
+        org: String,
+        repo: String,
+        assignee: &str,
+    ) -> Result<Vec<SearchResultsItems>> {
+        // curl -s "https://api.github.com/search/issues?q=is:open%20is:pr%20assignee:dhh%20repo:rails/rails"
+        let search_q = format!(
+            "is:open%20is:pr%20author:{}%20repo:{}/{}",
+            assignee, org, repo
+        );
+        let encoded_q = encode(&search_q);
+        println!("{encoded_q}");
+        let resp = self
+            .client
+            .get(format!("{}/search/issues?q={}", self.api_domain, search_q))
+            // .query(&["q", search_q.as_str()])
+            .headers(self.get_headers())
+            .send()
+            .await?;
+        resp.error_for_status()?
+            .json::<SearchResults>()
+            .await
+            .map(|r| r.items)
             .map_err(Error::from)
     }
 }

@@ -4,9 +4,16 @@ use std::fs;
 use anyhow::{Error, Result};
 use inquire::{
     ui::{Color, RenderConfig, Styled},
-    Editor,
+    Editor, Select,
 };
 
+/// Renderer used by inquire library.
+fn description_render_config() -> RenderConfig<'static> {
+    RenderConfig::default()
+        .with_canceled_prompt_indicator(Styled::new("<skipped>").with_fg(Color::DarkYellow))
+}
+
+/// Input for a commit/pull request comment.
 pub fn pr_comment(template_fp: String) -> Result<String> {
     let template = fs::read_to_string(template_fp)?;
     Editor::new("Commit/PR message:")
@@ -29,7 +36,8 @@ pub fn pr_comment(template_fp: String) -> Result<String> {
         .map_err(Error::from)
 }
 
-fn description_render_config() -> RenderConfig<'static> {
-    RenderConfig::default()
-        .with_canceled_prompt_indicator(Styled::new("<skipped>").with_fg(Color::DarkYellow))
+pub fn git_branch_selector(branches: Vec<String>) -> Result<String> {
+    Select::new("Which dependabot branch to use as the root?", branches)
+        .prompt()
+        .map_err(Error::from)
 }
