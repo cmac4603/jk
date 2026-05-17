@@ -1,12 +1,11 @@
-use std::env;
+use std::{env, future::Future};
 
 use anyhow::{Error, Result};
 use reqwest::{
     header::{HeaderMap, AUTHORIZATION, USER_AGENT},
-    Client,
+    Client, Error as ReqwestError, Response,
 };
 use serde::{Deserialize, Serialize};
-use urlencoding::encode;
 
 pub struct GithubClient<'gh> {
     api_domain: &'gh str,
@@ -54,12 +53,24 @@ pub struct CreatePrResponse {
 pub struct SearchResults {
     total_count: u64,
     incomplete_results: bool,
-    items: Vec<SearchResultsItems>,
+    pub items: Vec<SearchResultsItems>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SearchResultsItems {
-    number: u64,
+    pub number: u64,
+}
+
+#[derive(Deserialize)]
+pub struct GetPrResponse {
+    pub head: GetPrHead,
+}
+
+#[derive(Deserialize)]
+pub struct GetPrHead {
+    #[serde(rename = "ref")]
+    pub ref_: String,
+    pub sha: String,
 }
 
 impl<'gh> GithubClient<'gh> {
@@ -95,9 +106,9 @@ impl<'gh> GithubClient<'gh> {
     }
 
     pub async fn list_prs_by_assignee(
-        self,
-        org: String,
-        repo: String,
+        &self,
+        org: &String,
+        repo: &String,
         assignee: &str,
     ) -> Result<Vec<SearchResultsItems>> {
         // curl -s "https://api.github.com/search/issues?q=is:open%20is:pr%20assignee:dhh%20repo:rails/rails"
@@ -105,8 +116,7 @@ impl<'gh> GithubClient<'gh> {
             "is:open%20is:pr%20author:{}%20repo:{}/{}",
             assignee, org, repo
         );
-        let encoded_q = encode(&search_q);
-        println!("{encoded_q}");
+
         let resp = self
             .client
             .get(format!("{}/search/issues?q={}", self.api_domain, search_q))
@@ -119,5 +129,22 @@ impl<'gh> GithubClient<'gh> {
             .await
             .map(|r| r.items)
             .map_err(Error::from)
+    }
+
+    pub fn get_pull_request(
+        &self,
+        org: &String,
+        repo: &String,
+        number: u64,
+    ) -> Box<impl Future<Output = Result<Response, ReqwestError>>> {
+        Box::new(self.client
+            .get(format!(
+                "{}/repos/{}/{}/pulls/{}",
+                self.api_domain, org, repo, number
+            ))
+            // .query(&["q", search_q.as_str()])
+            .headers(self.get_headers())
+            .send()
+        )
     }
 }
