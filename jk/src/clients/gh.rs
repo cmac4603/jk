@@ -1,4 +1,4 @@
-use std::{env, future::Future};
+use std::{env, fmt::Display, future::Future};
 
 use anyhow::{Error, Result};
 use reqwest::{
@@ -63,7 +63,14 @@ pub struct SearchResultsItems {
 
 #[derive(Deserialize)]
 pub struct GetPrResponse {
+    pub title: String,
     pub head: GetPrHead,
+}
+
+impl Display for GetPrResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} | [{}]", self.title, self.head.ref_)
+    }
 }
 
 #[derive(Deserialize)]

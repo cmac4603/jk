@@ -88,4 +88,9 @@ impl GitClient {
         let caps = RE.captures(&remote_url).unwrap();
         Ok((caps["org"].to_string(), caps["repo"].to_string()))
     }
+
+    pub fn cherrypick(&self, commit_sha: String) -> Result<()> {
+        let commit = self.repo.find_commit(Oid::from_str(&commit_sha)?)?;
+        self.repo.cherrypick(&commit, None).map_err(Error::from)
+    }
 }

@@ -7,6 +7,8 @@ use inquire::{
     Editor, Select,
 };
 
+use crate::clients::gh::GetPrResponse;
+
 /// Renderer used by inquire library.
 fn description_render_config() -> RenderConfig<'static> {
     RenderConfig::default()
@@ -36,7 +38,7 @@ pub fn pr_comment(template_fp: String) -> Result<String> {
         .map_err(Error::from)
 }
 
-pub fn git_branch_selector(branches: Vec<String>) -> Result<String> {
+pub fn git_branch_selector(branches: Vec<GetPrResponse>) -> Result<GetPrResponse> {
     Select::new("Which dependabot branch to use as the root?", branches)
         .prompt()
         .map_err(Error::from)

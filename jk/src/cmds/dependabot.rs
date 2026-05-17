@@ -1,8 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
-use futures::future::join_all;
 
-use crate::{cfg::JkConfig, clients::gh::{GetPrResponse, GithubClient}, tools::git::GitClient};
+use crate::{
+    cfg::JkConfig,
+    clients::gh::{GetPrResponse, GithubClient},
+    tools::{git::GitClient, inputs::git_branch_selector},
+};
 
 #[derive(Debug, Parser)]
 pub struct NewArgs {}
@@ -33,11 +36,14 @@ impl ManageDependabot {
             .iter()
             .map(|pr| gh_client.get_pull_request(&org, &repo, pr.number));
 
-        let prs = join_all(pr_reqs).await;
-
-        for pr in prs {
-            println!("{}", pr?.error_for_status()?.json::<GetPrResponse>().await?.head.ref_);
+        let mut prs = Vec::with_capacity(pr_reqs.len());
+        for pr in pr_reqs {
+            prs.push(pr.await?.error_for_status()?.json::<GetPrResponse>().await?);
         }
+
+        let root_pr = git_branch_selector(prs)?;
+
+        println!("{}", root_pr);
 
         Ok(())
     }
